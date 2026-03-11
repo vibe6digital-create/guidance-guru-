@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/report_model.dart';
+import 'storage_service.dart';
 
 class PdfService {
   static Future<String?> generateReportPdf(ReportModel report) async {
@@ -113,6 +115,16 @@ class PdfService {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/guidance_guru_report.pdf');
     await file.writeAsBytes(bytes);
+
+    // Upload to Firebase Storage when live
+    final useMock = dotenv.get('USE_MOCK', fallback: 'false') == 'true';
+    if (!useMock) {
+      try {
+        await StorageService().uploadReportPdf(report.id, file);
+      } catch (_) {
+        // Upload failed — local file still available
+      }
+    }
 
     return file.path;
   }

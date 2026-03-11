@@ -1,4 +1,3 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -69,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (auth.isAuthenticated && auth.user != null) {
       _navigateToDashboard(auth.user!.role);
     } else {
-      Navigator.pushReplacementNamed(context, '/role-selection');
+      Navigator.pushReplacementNamed(context, '/welcome');
     }
   }
 
@@ -242,18 +241,12 @@ class _Blob extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(
-        sigmaX: AppSizes.glassBlurSigma * 3,
-        sigmaY: AppSizes.glassBlurSigma * 3,
-      ),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-        ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
       ),
     );
   }

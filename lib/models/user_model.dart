@@ -9,6 +9,10 @@ class UserModel {
   final String? profileImage;
   final DateTime createdAt;
   final String? studentCode;
+  final String? counselorName;
+  final String? counselorPhone;
+  final String? parentName;
+  final String? parentPhone;
 
   UserModel({
     required this.id,
@@ -19,6 +23,10 @@ class UserModel {
     this.profileImage,
     required this.createdAt,
     this.studentCode,
+    this.counselorName,
+    this.counselorPhone,
+    this.parentName,
+    this.parentPhone,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +42,10 @@ class UserModel {
       profileImage: json['profileImage'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       studentCode: json['studentCode'] as String?,
+      counselorName: json['counselorName'] as String?,
+      counselorPhone: json['counselorPhone'] as String?,
+      parentName: json['parentName'] as String?,
+      parentPhone: json['parentPhone'] as String?,
     );
   }
 
@@ -47,6 +59,10 @@ class UserModel {
       'profileImage': profileImage,
       'createdAt': createdAt.toIso8601String(),
       'studentCode': studentCode,
+      'counselorName': counselorName,
+      'counselorPhone': counselorPhone,
+      'parentName': parentName,
+      'parentPhone': parentPhone,
     };
   }
 
@@ -54,6 +70,10 @@ class UserModel {
     String? name,
     String? email,
     String? profileImage,
+    String? counselorName,
+    String? counselorPhone,
+    String? parentName,
+    String? parentPhone,
   }) {
     return UserModel(
       id: id,
@@ -64,6 +84,10 @@ class UserModel {
       profileImage: profileImage ?? this.profileImage,
       createdAt: createdAt,
       studentCode: studentCode,
+      counselorName: counselorName ?? this.counselorName,
+      counselorPhone: counselorPhone ?? this.counselorPhone,
+      parentName: parentName ?? this.parentName,
+      parentPhone: parentPhone ?? this.parentPhone,
     );
   }
 }

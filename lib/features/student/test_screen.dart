@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../controllers/auth_controller.dart';
 import '../../controllers/student_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
@@ -91,7 +92,9 @@ class _TestScreenState extends State<TestScreen> with WidgetsBindingObserver {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<StudentController>().submitTest().then((_) {
+              context.read<StudentController>().submitTest(
+                studentId: context.read<AuthController>().user?.id,
+              ).then((_) {
                 if (mounted) {
                   Navigator.pushReplacementNamed(context, '/result');
                 }

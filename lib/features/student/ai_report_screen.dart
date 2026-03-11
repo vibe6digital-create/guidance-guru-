@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' show Share, XFile;
+import '../../controllers/auth_controller.dart';
 import '../../controllers/student_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
@@ -26,7 +27,12 @@ class _AiReportScreenState extends State<AiReportScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StudentController>().loadReport();
+      final controller = context.read<StudentController>();
+      if (controller.currentReport == null) {
+        controller.loadReport(
+          studentId: context.read<AuthController>().user?.id,
+        );
+      }
     });
   }
 

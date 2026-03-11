@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../controllers/auth_controller.dart';
 import '../../controllers/parent_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
@@ -33,7 +34,10 @@ class _LinkStudentScreenState extends State<LinkStudentScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final parent = context.read<ParentController>();
-    final success = await parent.linkStudent(_codeController.text.trim());
+    final success = await parent.linkStudent(
+      _codeController.text.trim(),
+      parentId: context.read<AuthController>().user?.id,
+    );
 
     if (mounted && success) {
       _showSuccessDialog();

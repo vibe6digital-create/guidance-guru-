@@ -40,7 +40,7 @@ class StudentListScreen extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
             child: Row(
-              children: ['All', 'Pending', 'Reviewed', 'High Priority']
+              children: ['All', 'Pending', 'Reviewed', 'Counseled', 'High Priority']
                   .map((status) => Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterChip(
@@ -115,6 +115,8 @@ class _StudentListCard extends StatelessWidget {
         return AppColors.warning;
       case 'Reviewed':
         return AppColors.success;
+      case 'Counseled':
+        return AppColors.primary;
       case 'High Priority':
         return AppColors.error;
       default:

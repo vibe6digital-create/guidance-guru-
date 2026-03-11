@@ -63,6 +63,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
     setState(() => _notifications.clear());
   }
 
+  String? _typeRoute(String type) {
+    switch (type) {
+      case 'test_reminder':
+        return '/test-instructions';
+      case 'new_remark':
+        return '/remarks';
+      case 'report_ready':
+        return '/reports-list';
+      case 'parent_linked':
+        return null;
+      default:
+        return null;
+    }
+  }
+
   IconData _typeIcon(String type) {
     switch (type) {
       case 'test_reminder':
@@ -191,6 +206,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       return SurfaceCard(
                         onTap: () {
                           setState(() => notif['isRead'] = true);
+                          final route = _typeRoute(type);
+                          if (route != null) {
+                            Navigator.pushNamed(context, route);
+                          }
                         },
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,

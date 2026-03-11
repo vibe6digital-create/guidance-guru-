@@ -1,4 +1,3 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +49,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   void _onContinue() {
     if (_selectedRole == null) return;
     context.read<AuthController>().selectRole(_selectedRole!);
-    Navigator.pushNamed(context, '/login');
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final nextRoute = args?['nextRoute'] as String? ?? '/signup';
+    Navigator.pushNamed(context, nextRoute);
   }
 
   @override
@@ -167,26 +169,24 @@ class _RoleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: AppSizes.glassBlurSigma, sigmaY: AppSizes.glassBlurSigma),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? color.withValues(alpha: 0.2)
-                : AppColors.glassSurface(isDark),
-            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-            border: Border.all(
-              color: isSelected ? color : AppColors.glassBorder(isDark),
-              width: isSelected ? 2 : AppSizes.glassBorderWidth,
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? color.withValues(alpha: 0.2)
+            : (isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.white.withValues(alpha: 0.65)),
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        border: Border.all(
+          color: isSelected ? color : AppColors.glassBorder(isDark),
+          width: isSelected ? 2 : AppSizes.glassBorderWidth,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(AppSizes.radiusLg),
               child: Padding(
@@ -246,8 +246,6 @@ class _RoleCard extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 }

@@ -28,8 +28,10 @@ class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   late AnimationController _bgController;
   bool _otpNavigated = false;
+  bool _useEmail = false;
 
   @override
   void initState() {
@@ -43,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _phoneController.dispose();
+    _emailController.dispose();
     _bgController.dispose();
     super.dispose();
   }
@@ -50,8 +53,13 @@ class _LoginScreenState extends State<LoginScreen>
   void _onSendOtp() {
     if (_formKey.currentState?.validate() ?? false) {
       _otpNavigated = false;
-      final phone = _phoneController.text.trim();
-      context.read<AuthController>().sendOtp('+91$phone');
+      if (_useEmail) {
+        final email = _emailController.text.trim();
+        context.read<AuthController>().sendEmailOtp(email);
+      } else {
+        final phone = _phoneController.text.trim();
+        context.read<AuthController>().sendOtp('+91$phone');
+      }
     }
   }
 
@@ -224,7 +232,9 @@ class _LoginScreenState extends State<LoginScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Enter your phone number',
+                              _useEmail
+                                  ? 'Enter your email'
+                                  : 'Enter your phone number',
                               style: GoogleFonts.sora(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
@@ -243,56 +253,163 @@ class _LoginScreenState extends State<LoginScreen>
                                     : AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  height: 56,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? AppColors.surfaceDark
-                                        : AppColors.backgroundLight,
-                                    borderRadius: BorderRadius.circular(
-                                        AppSizes.radiusMd),
-                                    border: Border.all(
-                                        color: isDark
-                                            ? AppColors.dividerDark
-                                            : AppColors.divider),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '+91',
-                                      style: GoogleFonts.dmSans(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: isDark
-                                            ? AppColors.textPrimaryDark
-                                            : AppColors.textPrimary,
+                            const SizedBox(height: 16),
+                            // Phone / Email toggle
+                            Container(
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : AppColors.backgroundLight,
+                                borderRadius:
+                                    BorderRadius.circular(AppSizes.radiusMd),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => setState(() {
+                                        _useEmail = false;
+                                        _formKey.currentState?.reset();
+                                      }),
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: !_useEmail
+                                              ? (isDark
+                                                  ? AppColors.primaryBright
+                                                  : AppColors.primary)
+                                              : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(
+                                              AppSizes.radiusSm),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Phone',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: !_useEmail
+                                                  ? Colors.white
+                                                  : (isDark
+                                                      ? AppColors
+                                                          .textSecondaryDark
+                                                      : AppColors
+                                                          .textSecondary),
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: CustomTextField(
-                                    controller: _phoneController,
-                                    hint: AppStrings.phoneHint,
-                                    prefixIcon: Icons.phone_outlined,
-                                    keyboardType: TextInputType.phone,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                      LengthLimitingTextInputFormatter(10),
-                                    ],
-                                    validator: Validators.phone,
-                                    textInputAction: TextInputAction.done,
-                                    onSubmitted: (_) => _onSendOtp(),
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => setState(() {
+                                        _useEmail = true;
+                                        _formKey.currentState?.reset();
+                                      }),
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: _useEmail
+                                              ? (isDark
+                                                  ? AppColors.primaryBright
+                                                  : AppColors.primary)
+                                              : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(
+                                              AppSizes.radiusSm),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Email',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: _useEmail
+                                                  ? Colors.white
+                                                  : (isDark
+                                                      ? AppColors
+                                                          .textSecondaryDark
+                                                      : AppColors
+                                                          .textSecondary),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
+                            const SizedBox(height: 20),
+                            // Phone input
+                            if (!_useEmail)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 56,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? AppColors.surfaceDark
+                                          : AppColors.backgroundLight,
+                                      borderRadius: BorderRadius.circular(
+                                          AppSizes.radiusMd),
+                                      border: Border.all(
+                                          color: isDark
+                                              ? AppColors.dividerDark
+                                              : AppColors.divider),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '+91',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark
+                                              ? AppColors.textPrimaryDark
+                                              : AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: CustomTextField(
+                                      controller: _phoneController,
+                                      hint: AppStrings.phoneHint,
+                                      prefixIcon: Icons.phone_outlined,
+                                      keyboardType: TextInputType.phone,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                        LengthLimitingTextInputFormatter(10),
+                                      ],
+                                      validator: Validators.phone,
+                                      textInputAction: TextInputAction.done,
+                                      onSubmitted: (_) => _onSendOtp(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            // Email input
+                            if (_useEmail)
+                              CustomTextField(
+                                controller: _emailController,
+                                hint: 'Enter your email address',
+                                prefixIcon: Icons.email_outlined,
+                                keyboardType: TextInputType.emailAddress,
+                                validator: Validators.email,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _onSendOtp(),
+                              ),
                             const SizedBox(height: 24),
                             if (auth.errorMessage != null) ...[
                               Container(
@@ -359,6 +476,37 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                 ),
                               ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  AppStrings.dontHaveAccount,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 14,
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pushReplacementNamed(
+                                        context, '/signup');
+                                  },
+                                  child: Text(
+                                    AppStrings.signUp,
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? AppColors.primaryBright
+                                          : AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

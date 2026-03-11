@@ -14,6 +14,11 @@ class AppStrings {
   static const String otpHint = 'Enter OTP';
   static const String selectRole = 'Select Your Role';
   static const String continueText = 'Continue';
+  static const String signUp = 'Sign Up';
+  static const String createAccount = 'Create Account';
+  static const String fullName = 'Full Name';
+  static const String alreadyHaveAccount = 'Already have an account?';
+  static const String dontHaveAccount = "Don't have an account?";
   static const String logout = 'Logout';
   static const String logoutConfirm = 'Are you sure you want to logout?';
 
@@ -35,6 +40,11 @@ class AppStrings {
   static const String viewDetailedReport = 'View Detailed Report';
   static const String retakeTest = 'Retake Test';
   static const String downloadPdf = 'Download PDF';
+  static const String testHistory = 'Test History';
+  static const String reportsList = 'Reports';
+  static const String yourConnections = 'Your Connections';
+  static const String counsellor = 'Counsellor';
+  static const String parentGuardian = 'Parent / Guardian';
 
   // Academic Form Steps
   static const String class10Marks = 'Class 10 Marks';
@@ -79,6 +89,39 @@ class AppStrings {
   static const String notifications = 'Notifications';
   static const String markAllRead = 'Mark All Read';
   static const String clearAll = 'Clear All';
+
+  // Counselor Selection
+  static const String selectCounselor = 'Select Counsellor';
+  static const String changeCounselor = 'Change Counsellor';
+  static const String noCounselorSelected = 'No counsellor selected yet';
+  static const String counselorAssigned = 'Counsellor assigned successfully!';
+
+  // Session Invites & Scheduling
+  static const String sessionInvite = 'Session Invite';
+  static const String accept = 'Accept';
+  static const String decline = 'Decline';
+  static const String meetingPlatform = 'Meeting Platform';
+
+  // New Signup
+  static const String buildYourProfile = 'Build Your Profile';
+  static const String testInstructions = 'Test Instructions';
+  static const String beforeYouBegin = 'Before You Begin';
+
+  // Counselling Proposals
+  static const String sendProposal = 'Send Proposal';
+  static const String counsellingProposals = 'Counselling Proposals';
+  static const String proposalReasonLabel = 'Why do you need this counsellor for your child?';
+  static const String proposalReasonHint = 'Describe the reason for selecting this counsellor...';
+  static const String numberOfSessions = 'Number of Sessions';
+  static const String numberOfSessionsHint = 'Enter number of sessions (1-20)';
+  static const String expectedOutcomes = 'Expected Outcomes';
+  static const String expectedOutcomesHint = 'What outcomes do you expect from the counselling?';
+  static const String proposalSentSuccess = 'Proposal sent successfully!';
+  static const String acceptProposal = 'Accept Proposal';
+  static const String contactParent = 'Contact Parent';
+  static const String proposalAccepted = 'Proposal accepted successfully!';
+  static const String proposalMarkedDiscussion = 'Marked for discussion. Contact the parent to discuss further.';
+  static const String noProposals = 'No proposals yet';
 
   // Errors
   static const String somethingWentWrong = 'Something went wrong. Please try again.';

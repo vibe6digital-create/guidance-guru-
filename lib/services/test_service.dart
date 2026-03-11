@@ -1,40 +1,95 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/test_model.dart';
 import '../models/question_model.dart';
-import 'api_service.dart';
+import 'firestore_service.dart';
 
 class TestService {
-  final ApiService _api = ApiService();
+  final FirestoreService _fs = FirestoreService();
+
+  bool get _useMock => dotenv.get('USE_MOCK', fallback: 'false') == 'true';
 
   Future<TestModel> generateTest() async {
-    final response = await _api.get('/test/generate');
-    return TestModel.fromJson(response.data as Map<String, dynamic>);
+    if (_useMock) return getMockTest();
+
+    // Query for an active test
+    final tests = await _fs.getCollection(
+      _fs.tests,
+      where: [WhereClause('isActive', isEqualTo: true)],
+      limit: 1,
+    );
+
+    if (tests.isEmpty) return getMockTest();
+
+    final testDoc = tests.first;
+    // Fetch questions sub-collection
+    final questionDocs = await _fs.getCollection(_fs.questions(testDoc['id']));
+    final questions = questionDocs.map((q) => Question.fromJson(q)).toList();
+
+    return TestModel(
+      id: testDoc['id'],
+      title: testDoc['title'] ?? 'Career Aptitude Assessment',
+      description: testDoc['description'] ?? '',
+      questions: questions,
+      durationMinutes: testDoc['durationMinutes'] ?? 45,
+    );
   }
 
   Future<Map<String, dynamic>> submitTest({
     required String testId,
+    required String studentId,
     required Map<String, String> answers,
+    required double score,
+    required List<Map<String, dynamic>> categoryScores,
   }) async {
-    final response = await _api.post('/test/submit', data: {
+    if (_useMock) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      return {'success': true, 'testAttemptId': 'mock_attempt_1'};
+    }
+
+    final data = {
       'testId': testId,
+      'studentId': studentId,
       'answers': answers,
-    });
-    return response.data as Map<String, dynamic>;
+      'score': score,
+      'categoryScores': categoryScores,
+      'completedAt': DateTime.now().toIso8601String(),
+    };
+
+    final id = await _fs.addDocument(_fs.testAttempts, data);
+    return {'success': true, 'testAttemptId': id};
   }
 
-  Future<Map<String, dynamic>> getResult(String testId) async {
-    final response = await _api.get('/test/result/$testId');
-    return response.data as Map<String, dynamic>;
+  Future<Map<String, dynamic>?> getResult(String attemptId) async {
+    if (_useMock) return null;
+    return _fs.getDocument(_fs.testAttempts, attemptId);
   }
 
-  Future<List<TestModel>> getTestHistory() async {
-    final response = await _api.get('/test/history');
-    final list = response.data as List<dynamic>;
-    return list
-        .map((e) => TestModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+  Future<List<TestModel>> getTestHistory(String studentId) async {
+    if (_useMock) return [];
+
+    final docs = await _fs.getCollection(
+      _fs.testAttempts,
+      where: [WhereClause('studentId', isEqualTo: studentId)],
+      orderBy: 'completedAt',
+      descending: true,
+    );
+
+    return docs.map((d) {
+      return TestModel(
+        id: d['id'],
+        title: d['title'] ?? 'Career Aptitude Test',
+        description: d['description'] ?? '',
+        questions: [],
+        durationMinutes: d['durationMinutes'] ?? 45,
+        status: TestStatus.completed,
+        completedAt: d['completedAt'] != null ? DateTime.parse(d['completedAt']) : null,
+        score: (d['score'] as num?)?.toDouble(),
+      );
+    }).toList();
   }
 
-  // Mock data for development
+  // ── Mock data (preserved for development / USE_MOCK=true) ──
+
   static List<Question> getMockQuestions() {
     return [
       Question(

@@ -107,6 +107,35 @@ class StudentDetailScreen extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          // Guidance status update
+          SurfaceCard(
+            child: Row(
+              children: [
+                Icon(Icons.flag_rounded,
+                    size: 20,
+                    color: isDark
+                        ? AppColors.primaryBright
+                        : AppColors.primary),
+                const SizedBox(width: 10),
+                Text('Guidance Status',
+                    style: GoogleFonts.sora(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimary)),
+                const Spacer(),
+                _StatusDropdown(
+                  currentStatus: student['status'] as String,
+                  onChanged: (newStatus) {
+                    counselor.updateStudentStatus(
+                        student['id'] as String, newStatus);
+                  },
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           // Performance graph
           if (report != null) ...[
@@ -265,6 +294,71 @@ class StudentDetailScreen extends StatelessWidget {
           ],
           const SizedBox(height: 80), // Space for FAB
         ],
+      ),
+    );
+  }
+}
+
+class _StatusDropdown extends StatelessWidget {
+  final String currentStatus;
+  final ValueChanged<String> onChanged;
+
+  const _StatusDropdown({required this.currentStatus, required this.onChanged});
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'Pending':
+        return AppColors.warning;
+      case 'Reviewed':
+        return AppColors.success;
+      case 'Counseled':
+        return AppColors.primary;
+      case 'High Priority':
+        return AppColors.error;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: _statusColor(currentStatus).withValues(alpha: isDark ? 0.2 : 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _statusColor(currentStatus).withValues(alpha: 0.3),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: currentStatus,
+          isDense: true,
+          icon: Icon(Icons.arrow_drop_down,
+              color: _statusColor(currentStatus), size: 20),
+          style: GoogleFonts.dmSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: _statusColor(currentStatus),
+          ),
+          dropdownColor: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+          items: ['Pending', 'Reviewed', 'Counseled', 'High Priority']
+              .map((s) => DropdownMenuItem(
+                    value: s,
+                    child: Text(s,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _statusColor(s),
+                        )),
+                  ))
+              .toList(),
+          onChanged: (val) {
+            if (val != null && val != currentStatus) onChanged(val);
+          },
+        ),
       ),
     );
   }

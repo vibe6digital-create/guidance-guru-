@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'firebase_options.dart';
 
 import 'controllers/auth_controller.dart';
 import 'controllers/theme_controller.dart';
@@ -14,15 +17,23 @@ import 'features/auth/splash_screen.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/otp_screen.dart';
 import 'features/auth/role_selection_screen.dart';
+import 'features/auth/signup_screen.dart';
+import 'features/auth/welcome_screen.dart';
 import 'features/student/student_dashboard.dart';
 import 'features/student/academic_form.dart';
 import 'features/student/test_screen.dart';
 import 'features/student/result_screen.dart';
 import 'features/student/ai_report_screen.dart';
 import 'features/student/remarks_screen.dart';
+import 'features/student/test_history_screen.dart';
+import 'features/student/reports_list_screen.dart';
+import 'features/student/test_instructions_screen.dart';
 import 'features/parent/parent_dashboard.dart';
 import 'features/parent/link_student_screen.dart';
 import 'features/parent/parent_report_view.dart';
+import 'features/parent/counselling_proposal_screen.dart';
+import 'features/parent/select_counselor_screen.dart';
+import 'features/counselor/counselling_proposals_screen.dart';
 import 'features/counselor/counselor_dashboard.dart';
 import 'features/counselor/student_list.dart';
 import 'features/counselor/student_detail.dart';
@@ -35,8 +46,16 @@ import 'features/notifications/notification_settings_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Use bundled fonts, don't fetch over network
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   // Load environment variables
   await dotenv.load(fileName: '.env');
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
@@ -86,8 +105,14 @@ class GuidanceGuruApp extends StatelessWidget {
       case '/':
         page = const SplashScreen();
         break;
+      case '/welcome':
+        page = const WelcomeScreen();
+        break;
       case '/login':
         page = const LoginScreen();
+        break;
+      case '/signup':
+        page = const SignUpScreen();
         break;
       case '/otp':
         page = const OtpScreen();
@@ -102,6 +127,9 @@ class GuidanceGuruApp extends StatelessWidget {
       case '/academic-form':
         page = const AcademicFormScreen();
         break;
+      case '/test-instructions':
+        page = const TestInstructionsScreen();
+        break;
       case '/test':
         page = const TestScreen();
         break;
@@ -114,6 +142,12 @@ class GuidanceGuruApp extends StatelessWidget {
       case '/remarks':
         page = const RemarksScreen();
         break;
+      case '/test-history':
+        page = const TestHistoryScreen();
+        break;
+      case '/reports-list':
+        page = const ReportsListScreen();
+        break;
       // Parent
       case '/parent-dashboard':
         page = const ParentDashboard();
@@ -123,6 +157,12 @@ class GuidanceGuruApp extends StatelessWidget {
         break;
       case '/parent-report':
         page = const ParentReportView();
+        break;
+      case '/select-counselor':
+        page = const SelectCounselorScreen();
+        break;
+      case '/counselling-proposal':
+        page = const CounsellingProposalScreen();
         break;
       // Counselor
       case '/counselor-dashboard':
@@ -136,6 +176,9 @@ class GuidanceGuruApp extends StatelessWidget {
         break;
       case '/add-remark':
         page = const AddRemarkScreen();
+        break;
+      case '/counselling-proposals':
+        page = const CounsellingProposalsScreen();
         break;
       // Common
       case '/profile':
@@ -157,7 +200,7 @@ class GuidanceGuruApp extends StatelessWidget {
     return _buildRoute(settings, page);
   }
 
-  static const _authRoutes = {'/login', '/otp', '/role-selection'};
+  static const _authRoutes = {'/welcome', '/login', '/signup', '/otp', '/role-selection'};
   static const _dashboardRoutes = {
     '/student-dashboard',
     '/parent-dashboard',
@@ -165,6 +208,7 @@ class GuidanceGuruApp extends StatelessWidget {
   };
   static const _detailRoutes = {
     '/test',
+    '/test-instructions',
     '/result',
     '/ai-report',
     '/student-detail',
@@ -175,6 +219,11 @@ class GuidanceGuruApp extends StatelessWidget {
     '/student-list',
     '/add-remark',
     '/notifications',
+    '/test-history',
+    '/reports-list',
+    '/select-counselor',
+    '/counselling-proposal',
+    '/counselling-proposals',
   };
   static const _settingsRoutes = {
     '/profile',

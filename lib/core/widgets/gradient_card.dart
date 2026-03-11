@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
@@ -36,89 +35,77 @@ class _GradientCardState extends State<GradientCard> {
     Widget card;
 
     if (widget.glassmorphism) {
-      card = ClipRRect(
-        borderRadius: BorderRadius.circular(widget.borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.white.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : Colors.white.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onTap,
-                borderRadius: BorderRadius.circular(widget.borderRadius),
-                child: Padding(padding: widget.padding, child: widget.child),
-              ),
-            ),
+      card = Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            child: Padding(padding: widget.padding, child: widget.child),
           ),
         ),
       );
     } else {
-      card = TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0, end: _isPressed ? 0.02 : 0),
-        duration: const Duration(milliseconds: 300),
-        builder: (context, rotateValue, child) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: widget.gradient ??
-                  (isDark ? AppColors.cardGradientDark : AppColors.cardGradient),
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+      card = Container(
+        decoration: BoxDecoration(
+          gradient: widget.gradient ??
+              (isDark ? AppColors.cardGradientDark : AppColors.cardGradient),
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          child: Stack(
+            children: [
+              // Glass light reflection at top
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 2,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.3),
+                        Colors.transparent,
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              child: Stack(
-                children: [
-                  // Glass light reflection at top
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 2,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withValues(alpha: 0.3),
-                            Colors.transparent,
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: widget.onTap,
-                      borderRadius:
-                          BorderRadius.circular(widget.borderRadius),
-                      child: Padding(
-                          padding: widget.padding, child: widget.child),
-                    ),
-                  ),
-                ],
               ),
-            ),
-          );
-        },
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.onTap,
+                  borderRadius:
+                      BorderRadius.circular(widget.borderRadius),
+                  child: Padding(
+                      padding: widget.padding, child: widget.child),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -153,7 +140,7 @@ class SurfaceCard extends StatefulWidget {
     this.padding = const EdgeInsets.all(AppSizes.cardPadding),
     this.onTap,
     this.borderRadius = AppSizes.cardRadius,
-    this.glassmorphism = true,
+    this.glassmorphism = false,
   });
 
   @override
@@ -168,95 +155,61 @@ class _SurfaceCardState extends State<SurfaceCard> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasTap = widget.onTap != null;
 
-    Widget card;
-
-    if (widget.glassmorphism) {
-      card = ClipRRect(
+    final card = Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: AppSizes.glassBlurSigma,
-            sigmaY: AppSizes.glassBlurSigma,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.glassSurface(isDark),
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              border: Border.all(
-                color: AppColors.glassBorder(isDark),
-                width: AppSizes.glassBorderWidth,
+        border: Border.all(
+          color: isDark
+              ? AppColors.dividerDark
+              : AppColors.divider.withValues(alpha: 0.5),
+          width: 1,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        child: Stack(
+          children: [
+            // Subtle top highlight
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 1.5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: isDark ? 0.08 : 0.3),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                ),
               ),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              child: Stack(
-                children: [
-                  // Glass light reflection at top
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 2,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withValues(alpha: 0.3),
-                            Colors.transparent,
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: widget.onTap,
-                      borderRadius:
-                          BorderRadius.circular(widget.borderRadius),
-                      child: Padding(
-                          padding: widget.padding, child: widget.child),
-                    ),
-                  ),
-                ],
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                child: Padding(padding: widget.padding, child: widget.child),
               ),
             ),
-          ),
+          ],
         ),
-      );
-    } else {
-      card = Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          border: Border.all(
-            color: isDark
-                ? AppColors.dividerDark
-                : AppColors.divider.withValues(alpha: 0.5),
-            width: 1,
-          ),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            child: Padding(padding: widget.padding, child: widget.child),
-          ),
-        ),
-      );
-    }
+      ),
+    );
 
     if (hasTap) {
       return GestureDetector(

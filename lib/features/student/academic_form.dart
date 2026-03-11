@@ -121,8 +121,10 @@ class _AcademicFormScreenState extends State<AcademicFormScreen> {
 
     final controller = context.read<StudentController>();
     controller.updateAcademicData(academicData);
-    controller.submitAcademicData();
-    Navigator.pushNamed(context, '/test');
+    controller.submitAcademicData(
+      studentId: context.read<AuthController>().user?.id,
+    );
+    Navigator.pushNamed(context, '/test-instructions');
   }
 
   @override

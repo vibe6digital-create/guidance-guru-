@@ -5,6 +5,7 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/parent_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/constants/app_strings.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/widgets/animated_list_item.dart';
 import '../../core/widgets/custom_button.dart';
@@ -30,7 +31,12 @@ class _ParentDashboardState extends State<ParentDashboard> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ParentController>().loadDashboard();
+      final auth = context.read<AuthController>();
+      final isNew = auth.isNewUser;
+      context.read<ParentController>().loadDashboard(
+        parentId: auth.user?.id,
+        isNewSignup: isNew,
+      );
     });
   }
 
@@ -76,7 +82,7 @@ class _DashboardTab extends StatelessWidget {
           ? const LoadingWidget()
           : RefreshIndicator(
               color: AppColors.primary,
-              onRefresh: () => parent.loadDashboard(),
+              onRefresh: () => parent.loadDashboard(parentId: auth.user?.id),
               child: ListView(
                 padding: const EdgeInsets.all(AppSizes.md),
                 children: [
@@ -318,47 +324,458 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-// Placeholder tabs with empty state animations
 class _ReportsTab extends StatelessWidget {
+  Color _bandColor(double score) {
+    if (score >= 85) return AppColors.success;
+    if (score >= 70) return Colors.blue;
+    if (score >= 50) return AppColors.warning;
+    return AppColors.error;
+  }
+
+  String _bandLabel(double score) {
+    if (score >= 85) return 'Excellent';
+    if (score >= 70) return 'Good';
+    if (score >= 50) return 'Average';
+    return 'Below Average';
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _remarkTypeLabel(dynamic type) {
+    switch (type.toString()) {
+      case 'RemarkType.academic':
+        return 'Academic';
+      case 'RemarkType.career':
+        return 'Career';
+      case 'RemarkType.urgent':
+        return 'Urgent';
+      default:
+        return 'General';
+    }
+  }
+
+  Color _remarkTypeColor(dynamic type) {
+    switch (type.toString()) {
+      case 'RemarkType.academic':
+        return Colors.blue;
+      case 'RemarkType.career':
+        return AppColors.success;
+      case 'RemarkType.urgent':
+        return AppColors.error;
+      default:
+        return AppColors.warning;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final parent = context.watch<ParentController>();
+    final student = parent.linkedStudents.isNotEmpty
+        ? parent.linkedStudents.first
+        : null;
+
     return SafeArea(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ScaleFadeIn(
-              delay: const Duration(milliseconds: 100),
-              child: Icon(Icons.assessment_rounded,
-                  size: 64,
-                  color: (isDark
-                          ? AppColors.primaryBright
-                          : AppColors.primary)
-                      .withValues(alpha: isDark ? 0.7 : 0.5)),
+      child: ListView(
+        padding: const EdgeInsets.all(AppSizes.md),
+        children: [
+          const SizedBox(height: 8),
+          AnimatedListItem(
+            index: 0,
+            child: Text(
+              'Student Overview',
+              style: GoogleFonts.sora(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimary,
+              ),
             ),
-            const SizedBox(height: 16),
-            FadeInWidget(
-              delay: const Duration(milliseconds: 300),
-              child: Text('Student Reports',
-                  style: GoogleFonts.sora(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? AppColors.textPrimaryDark
-                          : AppColors.textPrimary)),
+          ),
+          const SizedBox(height: 20),
+
+          // Counsellor Contact Card
+          if (student != null) ...[
+            AnimatedListItem(
+              index: 1,
+              child: Text(
+                'Counsellor',
+                style: GoogleFonts.sora(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimary,
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
-            FadeInWidget(
-              delay: const Duration(milliseconds: 400),
-              child: Text('Select a linked student to view their reports',
-                  style: GoogleFonts.dmSans(
+            const SizedBox(height: 12),
+            AnimatedListItem(
+              index: 2,
+              child: SurfaceCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary
+                            .withValues(alpha: isDark ? 0.2 : 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(Icons.psychology_rounded,
+                          color: isDark
+                              ? AppColors.primaryBright
+                              : AppColors.primary,
+                          size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            student['counselorName'] as String,
+                            style: GoogleFonts.sora(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.textPrimaryDark
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            student['counselorPhone'] as String? ?? '',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Call ${student['counselorName']} at ${student['counselorPhone']}',
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: isDark
+                              ? AppColors.buttonGradientDark
+                              : AppColors.buttonGradient,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.call_rounded,
+                                color: Colors.white, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Talk',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Counsellor Remarks
+          AnimatedListItem(
+            index: 3,
+            child: Text(
+              'Counsellor Remarks',
+              style: GoogleFonts.sora(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (parent.studentRemarks.isEmpty)
+            AnimatedListItem(
+              index: 4,
+              child: SurfaceCard(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    'No remarks yet',
+                    style: GoogleFonts.dmSans(
                       color: isDark
                           ? AppColors.textSecondaryDark
-                          : AppColors.textSecondary)),
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            ...parent.studentRemarks.asMap().entries.map((entry) {
+              final i = entry.key;
+              final remark = entry.value;
+              final typeColor = _remarkTypeColor(remark.type);
+
+              return AnimatedListItem(
+                index: 4 + i,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SurfaceCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.comment_rounded,
+                                size: 16,
+                                color: isDark
+                                    ? AppColors.primaryBright
+                                    : AppColors.primary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                remark.counselorName,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.primaryBright
+                                      : AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: typeColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _remarkTypeLabel(remark.type),
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: typeColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          remark.message,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimary,
+                            height: 1.4,
+                          ),
+                        ),
+                        if (remark.actionItems.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          ...remark.actionItems.map((item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 3),
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.check_circle_outline_rounded,
+                                        size: 14,
+                                        color: isDark
+                                            ? AppColors.successBright
+                                            : AppColors.success),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        item,
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? AppColors.textSecondaryDark
+                                              : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                        ],
+                        const SizedBox(height: 6),
+                        Text(
+                          _formatDate(remark.createdAt),
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+
+          const SizedBox(height: 24),
+
+          // Student Test History
+          AnimatedListItem(
+            index: 7,
+            child: Text(
+              'Tests Completed',
+              style: GoogleFonts.sora(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimary,
+              ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          if (parent.studentTestHistory.isEmpty)
+            AnimatedListItem(
+              index: 8,
+              child: SurfaceCard(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    'No tests completed yet',
+                    style: GoogleFonts.dmSans(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            ...parent.studentTestHistory.asMap().entries.map((entry) {
+              final i = entry.key;
+              final test = entry.value;
+              final score = test.score ?? 0;
+              final color = _bandColor(score);
+              final band = _bandLabel(score);
+
+              return AnimatedListItem(
+                index: 8 + i,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SurfaceCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.quiz_rounded,
+                              color: color, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                test.title,
+                                style: GoogleFonts.sora(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.textPrimaryDark
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                test.description,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                test.completedAt != null
+                                    ? _formatDate(test.completedAt!)
+                                    : '',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${score.toInt()}%\n$band',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+        ],
       ),
     );
   }
@@ -368,29 +785,178 @@ class _NotificationsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final parent = context.watch<ParentController>();
+    final invites = parent.sessionInvites;
+
     return SafeArea(
-      child: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.md),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ScaleFadeIn(
-              delay: const Duration(milliseconds: 100),
-              child: Icon(Icons.notifications_none_rounded,
-                  size: 64,
-                  color: (isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondary)
-                      .withValues(alpha: 0.4)),
+            const SizedBox(height: 8),
+            FadeInWidget(
+              child: Text('Alerts',
+                  style: GoogleFonts.sora(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary)),
             ),
             const SizedBox(height: 16),
-            FadeInWidget(
-              delay: const Duration(milliseconds: 300),
-              child: Text('No notifications yet',
-                  style: GoogleFonts.dmSans(
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondary)),
-            ),
+            if (invites.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ScaleFadeIn(
+                        delay: const Duration(milliseconds: 100),
+                        child: Icon(Icons.notifications_none_rounded,
+                            size: 64,
+                            color: (isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary)
+                                .withValues(alpha: 0.4)),
+                      ),
+                      const SizedBox(height: 16),
+                      FadeInWidget(
+                        delay: const Duration(milliseconds: 300),
+                        child: Text('No notifications yet',
+                            style: GoogleFonts.dmSans(
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary)),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: invites.length,
+                  itemBuilder: (context, index) {
+                    final invite = invites[index];
+                    final status = invite['status'] as String? ?? 'pending';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: AnimatedListItem(
+                        index: index,
+                        child: SurfaceCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 40, height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(Icons.event_rounded,
+                                        color: isDark ? AppColors.primaryBright : AppColors.primary, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(AppStrings.sessionInvite,
+                                            style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.w600,
+                                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
+                                        Text(invite['counselorName'] as String? ?? '',
+                                            style: GoogleFonts.dmSans(fontSize: 12,
+                                                color: isDark ? AppColors.primaryBright : AppColors.primary)),
+                                      ],
+                                    ),
+                                  ),
+                                  if (invite['platform'] != null)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accent.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(invite['platform'] as String,
+                                          style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.w600,
+                                              color: isDark ? AppColors.accentBright : AppColors.accent)),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(invite['topic'] as String? ?? 'Counselling session',
+                                  style: GoogleFonts.dmSans(fontSize: 13,
+                                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
+                              const SizedBox(height: 4),
+                              Text(invite['dateTime'] as String? ?? '',
+                                  style: GoogleFonts.dmSans(fontSize: 12,
+                                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)),
+                              if (status == 'pending') ...[
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => parent.respondToSessionInvite(invite['id'] as String, true),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                          decoration: BoxDecoration(
+                                            gradient: isDark ? AppColors.buttonGradientDark : AppColors.buttonGradient,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Center(child: Text(AppStrings.accept,
+                                              style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white))),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => parent.respondToSessionInvite(invite['id'] as String, false),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          child: Center(child: Text(AppStrings.decline,
+                                              style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600,
+                                                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary))),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ] else
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: (status == 'accepted' ? AppColors.success : AppColors.error)
+                                          .withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      status == 'accepted' ? 'Accepted' : 'Declined',
+                                      style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w600,
+                                          color: status == 'accepted' ? AppColors.success : AppColors.error),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),

@@ -65,6 +65,15 @@ class _OtpScreenState extends State<OtpScreen>
     super.dispose();
   }
 
+  void _navigateToDashboard(UserRole role) {
+    final route = switch (role) {
+      UserRole.student => '/student-dashboard',
+      UserRole.parent => '/parent-dashboard',
+      UserRole.counselor => '/counselor-dashboard',
+    };
+    Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
+  }
+
   Future<void> _verifyOtp(String otp) async {
     final auth = context.read<AuthController>();
     final success = await auth.verifyOtp(otp);
@@ -72,32 +81,34 @@ class _OtpScreenState extends State<OtpScreen>
     if (!mounted) return;
 
     if (success) {
-      final role = auth.user?.role ?? auth.selectedRole;
-      if (role != null) {
-        if (auth.user == null) {
-          auth.setMockUser(role);
+      // If user already exists in Firestore, navigate directly
+      if (auth.user != null) {
+        _navigateToDashboard(auth.user!.role);
+        return;
+      }
+
+      // New user from signup — register with Firestore
+      final role = auth.selectedRole;
+      if (role != null && auth.signupName != null) {
+        final registered = await auth.registerWithRole(
+          name: auth.signupName!,
+          role: role,
+          email: auth.signupEmail,
+        );
+        if (!mounted) return;
+        if (registered) {
+          _navigateToDashboard(role);
         }
-        _navigateToDashboard(role);
-      } else {
+      } else if (role != null) {
+        // Login flow — new user without signup data, go to role selection
         Navigator.pushNamedAndRemoveUntil(
             context, '/role-selection', (_) => false);
+      } else {
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/welcome', (_) => false);
       }
     } else {
       _animController.forward().then((_) => _animController.reverse());
-    }
-  }
-
-  void _navigateToDashboard(UserRole role) {
-    switch (role) {
-      case UserRole.student:
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/student-dashboard', (_) => false);
-      case UserRole.parent:
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/parent-dashboard', (_) => false);
-      case UserRole.counselor:
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/counselor-dashboard', (_) => false);
     }
   }
 
@@ -183,7 +194,7 @@ class _OtpScreenState extends State<OtpScreen>
                 FadeInWidget(
                   delay: const Duration(milliseconds: 300),
                   child: Text(
-                    'Enter the 6-digit code sent to\n${auth.phone ?? ''}',
+                    'Enter the 6-digit code sent to\n${auth.loginIdentifier}',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.dmSans(
                       fontSize: 15,
@@ -250,9 +261,12 @@ class _OtpScreenState extends State<OtpScreen>
                       )
                     : TextButton(
                         onPressed: () {
-                          context
-                              .read<AuthController>()
-                              .sendOtp(auth.phone ?? '');
+                          final authCtrl = context.read<AuthController>();
+                          if (authCtrl.isEmailLogin) {
+                            authCtrl.sendEmailOtp(authCtrl.email ?? '');
+                          } else {
+                            authCtrl.sendOtp(authCtrl.phone ?? '');
+                          }
                           _startCountdown();
                         },
                         child: Text(

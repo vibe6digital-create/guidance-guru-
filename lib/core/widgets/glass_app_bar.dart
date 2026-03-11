@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -88,51 +87,45 @@ class _GlassAppBarState extends State<GlassAppBar>
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: AppSizes.glassBlurSigma,
-            sigmaY: AppSizes.glassBlurSigma,
+      child: Container(
+        padding: EdgeInsets.only(top: topPadding),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF0F0F1A).withValues(alpha: 0.85)
+              : Colors.white.withValues(alpha: 0.85),
+          border: Border(
+            bottom: BorderSide(
+              color: AppColors.glassBorder(isDark),
+              width: AppSizes.glassBorderWidth,
+            ),
           ),
-          child: Container(
-            padding: EdgeInsets.only(top: topPadding),
-            decoration: BoxDecoration(
-              color: AppColors.glassSurface(isDark),
-              border: Border(
-                bottom: BorderSide(
-                  color: AppColors.glassBorder(isDark),
-                  width: AppSizes.glassBorderWidth,
-                ),
-              ),
-            ),
-            child: SizedBox(
-              height: AppSizes.appBarHeight,
-              child: NavigationToolbar(
-                leading: widget.leading ??
-                    (widget.automaticallyImplyLeading &&
-                            Navigator.canPop(context)
-                        ? IconButton(
-                            icon: Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: foreground,
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          )
-                        : null),
-                middle: titleContent,
-                trailing: widget.actions != null
-                    ? IconTheme(
-                        data: IconThemeData(color: foreground),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: widget.actions!,
+        ),
+        child: SizedBox(
+          height: AppSizes.appBarHeight,
+          child: NavigationToolbar(
+            leading: widget.leading ??
+                (widget.automaticallyImplyLeading &&
+                        Navigator.canPop(context)
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: foreground,
                         ),
+                        onPressed: () => Navigator.pop(context),
                       )
-                    : null,
-                centerMiddle: true,
-                middleSpacing: NavigationToolbar.kMiddleSpacing,
-              ),
-            ),
+                    : null),
+            middle: titleContent,
+            trailing: widget.actions != null
+                ? IconTheme(
+                    data: IconThemeData(color: foreground),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: widget.actions!,
+                    ),
+                  )
+                : null,
+            centerMiddle: true,
+            middleSpacing: NavigationToolbar.kMiddleSpacing,
           ),
         ),
       ),

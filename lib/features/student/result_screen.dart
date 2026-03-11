@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/student_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../core/utils/helpers.dart';
-import '../../core/widgets/animated_list_item.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/fade_in_widget.dart';
 import '../../core/widgets/glass_app_bar.dart';
@@ -51,7 +49,6 @@ class _ResultScreenState extends State<ResultScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final student = context.watch<StudentController>();
     final band = Helpers.getPerformanceBand(student.testScore);
-    final bandColor = Helpers.performanceBandColor(band);
     final bandIcon = Helpers.performanceBandIcon(band);
 
     return GlassScaffold(
@@ -124,161 +121,89 @@ class _ResultScreenState extends State<ResultScreen>
                       style: GoogleFonts.sora(
                           fontSize: 16, fontWeight: FontWeight.w600, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
                   const SizedBox(height: 20),
-                  SizedBox(
-                    height: 200,
-                    child: BarChart(
-                      BarChartData(
-                        alignment: BarChartAlignment.spaceAround,
-                        maxY: 100,
-                        barTouchData: BarTouchData(
-                          touchTooltipData: BarTouchTooltipData(
-                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                              final categories = student.categoryScores;
-                              if (groupIndex < categories.length) {
-                                return BarTooltipItem(
-                                  '${categories[groupIndex].category}\n${rod.toY.toInt()}%',
-                                  GoogleFonts.dmSans(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                );
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        titlesData: FlTitlesData(
-                          show: true,
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                final categories = student.categoryScores;
-                                if (value.toInt() < categories.length) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: Text(
-                                      categories[value.toInt()].category,
-                                      style: GoogleFonts.dmSans(
-                                        fontSize: 11,
-                                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              },
-                            ),
-                          ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 32,
-                              getTitlesWidget: (value, meta) => Text(
-                                '${value.toInt()}',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 10,
-                                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                  ...student.categoryScores.map((cat) {
+                    final catColor = Helpers.performanceBandColor(
+                        Helpers.getPerformanceBand(cat.score));
+                    final catBand = Helpers.getPerformanceBand(cat.score);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                cat.category,
+                                style: GoogleFonts.sora(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.textPrimaryDark
+                                      : AppColors.textPrimary,
                                 ),
                               ),
-                            ),
-                          ),
-                          topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                        ),
-                        gridData: FlGridData(
-                          show: true,
-                          drawVerticalLine: false,
-                          horizontalInterval: 25,
-                          getDrawingHorizontalLine: (value) => FlLine(
-                            color: isDark ? AppColors.dividerDark : AppColors.divider,
-                            strokeWidth: 1,
-                          ),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        barGroups: List.generate(
-                          student.categoryScores.length,
-                          (i) => BarChartGroupData(
-                            x: i,
-                            barRods: [
-                              BarChartRodData(
-                                toY: student.categoryScores[i].score,
-                                gradient: isDark ? AppColors.buttonGradientDark : AppColors.buttonGradient,
-                                width: 28,
-                                borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(6)),
+                              Row(
+                                children: [
+                                  Text(
+                                    '${cat.score.toInt()}%',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: catColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: catColor.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      catBand,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: catColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: LinearProgressIndicator(
+                              value: cat.score / 100,
+                              backgroundColor:
+                                  catColor.withValues(alpha: 0.1),
+                              valueColor:
+                                  AlwaysStoppedAnimation(catColor),
+                              minHeight: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${cat.correctAnswers} of ${cat.totalQuestions} questions correct',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 ],
               ),
             ),
             ),
-            const SizedBox(height: 16),
-            // Category details
-            ...student.categoryScores.asMap().entries.map((entry) {
-              final cat = entry.value;
-              return AnimatedListItem(
-                index: entry.key,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: SurfaceCard(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Helpers.performanceBandColor(
-                                    Helpers.getPerformanceBand(cat.score))
-                                .withValues(alpha: isDark ? 0.2 : 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${cat.score.toInt()}%',
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Helpers.performanceBandColor(
-                                    Helpers.getPerformanceBand(cat.score)),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(cat.category,
-                                  style: GoogleFonts.sora(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
-                              Text(
-                                '${cat.correctAnswers}/${cat.totalQuestions} correct',
-                                style: GoogleFonts.dmSans(
-                                    fontSize: 13,
-                                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
             const SizedBox(height: 24),
             // Action buttons
             CustomButton(

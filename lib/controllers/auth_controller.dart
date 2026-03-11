@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -11,16 +12,39 @@ class AuthController extends ChangeNotifier {
   UserModel? _user;
   String? _errorMessage;
   String? _phone;
+  String? _email;
   bool _isNewUser = false;
   UserRole? _selectedRole;
+  bool _isEmailLogin = false;
+  String? _signupName;
+  String? _signupEmail;
+  StreamSubscription? _authSub;
+
+  AuthController() {
+    // Listen to Firebase auth state changes
+    _authSub = _authService.authStateChanges.listen((firebaseUser) {
+      if (firebaseUser == null && _state == AuthState.authenticated) {
+        _user = null;
+        _state = AuthState.unauthenticated;
+        notifyListeners();
+      }
+    });
+  }
 
   AuthState get state => _state;
   UserModel? get user => _user;
   String? get errorMessage => _errorMessage;
   String? get phone => _phone;
+  String? get email => _email;
   bool get isNewUser => _isNewUser;
   bool get isAuthenticated => _state == AuthState.authenticated;
   UserRole? get selectedRole => _selectedRole;
+  bool get isEmailLogin => _isEmailLogin;
+  String? get signupName => _signupName;
+  String? get signupEmail => _signupEmail;
+
+  /// The identifier shown on the OTP screen (phone or email)
+  String get loginIdentifier => _isEmailLogin ? (_email ?? '') : (_phone ?? '');
 
   void selectRole(UserRole role) {
     _selectedRole = role;
@@ -52,7 +76,28 @@ class AuthController extends ChangeNotifier {
       _state = AuthState.otpSent;
     } catch (e) {
       _state = AuthState.error;
-      _errorMessage = 'Failed to send OTP. Please try again.';
+      _errorMessage = e.toString().contains('FirebaseAuthException')
+          ? e.toString().replaceFirst(RegExp(r'.*\] '), '')
+          : 'Failed to send OTP. Please try again.';
+    }
+    notifyListeners();
+  }
+
+  Future<void> sendEmailOtp(String email) async {
+    _state = AuthState.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _email = email;
+      _isEmailLogin = true;
+      // Mock: simulate sending OTP to email
+      await Future.delayed(const Duration(milliseconds: 600));
+      _isNewUser = false;
+      _state = AuthState.otpSent;
+    } catch (e) {
+      _state = AuthState.error;
+      _errorMessage = 'Failed to send OTP to email. Please try again.';
     }
     notifyListeners();
   }
@@ -115,6 +160,33 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  Future<void> signUp({
+    required String name,
+    required String email,
+    required String phone,
+    required UserRole role,
+  }) async {
+    _state = AuthState.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _selectedRole = role;
+      _phone = phone;
+      _signupName = name;
+      _signupEmail = email;
+      final response = await _authService.sendOtp(phone);
+      _isNewUser = response['isNewUser'] as bool? ?? true;
+      _state = AuthState.otpSent;
+    } catch (e) {
+      _state = AuthState.error;
+      _errorMessage = e.toString().contains('FirebaseAuthException')
+          ? e.toString().replaceFirst(RegExp(r'.*\] '), '')
+          : e.toString();
+    }
+    notifyListeners();
+  }
+
   void updateUser(UserModel updatedUser) {
     _user = updatedUser;
     notifyListeners();
@@ -124,12 +196,14 @@ class AuthController extends ChangeNotifier {
     await _authService.logout();
     _user = null;
     _phone = null;
+    _email = null;
+    _isEmailLogin = false;
     _state = AuthState.unauthenticated;
     notifyListeners();
   }
 
   // For demo/development — set a mock user
-  void setMockUser(UserRole role) {
+  void setMockUser(UserRole role, {bool isNewSignup = false}) {
     _user = UserModel(
       id: 'mock_${role.name}_1',
       name: role == UserRole.student
@@ -142,8 +216,19 @@ class AuthController extends ChangeNotifier {
       role: role,
       createdAt: DateTime.now(),
       studentCode: role == UserRole.student ? 'STU2024001' : null,
+      counselorName: role == UserRole.student && !isNewSignup ? 'Dr. Priya Sharma' : null,
+      counselorPhone: role == UserRole.student && !isNewSignup ? '+91 98765 00001' : null,
+      parentName: role == UserRole.student && !isNewSignup ? 'Rajesh Kumar' : null,
+      parentPhone: role == UserRole.student && !isNewSignup ? '+91 98765 00002' : null,
     );
+    _isNewUser = isNewSignup;
     _state = AuthState.authenticated;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 }

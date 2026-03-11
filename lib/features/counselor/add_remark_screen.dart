@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../controllers/auth_controller.dart';
 import '../../controllers/counselor_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
@@ -82,11 +83,14 @@ class _AddRemarkScreenState extends State<AddRemarkScreen> {
 
     if (confirm != true) return;
 
+    final auth = context.read<AuthController>();
     final success = await counselor.addRemark(
       studentId: student['id'] as String,
       message: _messageController.text.trim(),
       type: _selectedType,
       actionItems: _actionItems,
+      counselorId: auth.user?.id,
+      counselorName: auth.user?.name,
     );
 
     if (mounted && success) {

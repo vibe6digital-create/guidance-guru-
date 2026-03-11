@@ -241,6 +241,103 @@ class ParentReportView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+          // AI Summary
+          if (report.aiSummary != null) ...[
+            Text('AI Analysis',
+                style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.w600, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
+            const SizedBox(height: 12),
+            SurfaceCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded,
+                          size: 18,
+                          color: isDark ? AppColors.primaryBright : AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text('Summary',
+                          style: GoogleFonts.sora(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(report.aiSummary!,
+                      style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                          height: 1.5)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          // Strengths
+          if (report.strengths != null && report.strengths!.isNotEmpty) ...[
+            Text('Strengths',
+                style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.w600, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
+            const SizedBox(height: 12),
+            SurfaceCard(
+              child: Column(
+                children: report.strengths!
+                    .map((s) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.check_circle_rounded,
+                                  size: 18,
+                                  color: isDark ? AppColors.successBright : AppColors.success),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(s,
+                                    style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                                        height: 1.4)),
+                              ),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          // Areas for Improvement
+          if (report.areasForImprovement != null && report.areasForImprovement!.isNotEmpty) ...[
+            Text('Areas for Improvement',
+                style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.w600, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),
+            const SizedBox(height: 12),
+            SurfaceCard(
+              child: Column(
+                children: report.areasForImprovement!
+                    .map((a) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.trending_up_rounded,
+                                  size: 18,
+                                  color: isDark ? AppColors.warningBright : AppColors.warning),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(a,
+                                    style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                                        height: 1.4)),
+                              ),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
           // Top Recommendations
           Text('Top Career Recommendations',
               style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.w600, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)),

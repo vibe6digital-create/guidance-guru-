@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/test_model.dart';
 import '../models/question_model.dart';
@@ -8,11 +9,16 @@ import '../models/student_academic_model.dart';
 import '../services/test_service.dart';
 import '../services/report_service.dart';
 import '../services/gemini_service.dart';
+import '../services/firestore_service.dart';
 
 enum LoadState { idle, loading, success, error }
 
 class StudentController extends ChangeNotifier {
   final TestService _testService = TestService();
+  final ReportService _reportService = ReportService();
+  final FirestoreService _fs = FirestoreService();
+
+  bool get _useMock => dotenv.get('USE_MOCK', fallback: 'false') == 'true';
 
   // Dashboard state
   LoadState _dashboardState = LoadState.idle;
@@ -21,6 +27,13 @@ class StudentController extends ChangeNotifier {
   int _streak = 0;
   double _completionPercentage = 0;
   List<Map<String, dynamic>> _recentActivity = [];
+
+  // Test history & reports list
+  List<TestModel> _testHistory = [];
+  List<ReportModel> _reportsList = [];
+  double _averageScore = 0;
+  String _averageScoreBand = 'N/A';
+  List<Map<String, dynamic>> _recommendedTests = [];
 
   // Test state
   TestModel? _currentTest;
@@ -41,6 +54,10 @@ class StudentController extends ChangeNotifier {
   int _academicFormStep = 0;
   LoadState _academicState = LoadState.idle;
 
+  // Session invites
+  List<Map<String, dynamic>> _sessionInvites = [];
+  List<Map<String, dynamic>> get sessionInvites => _sessionInvites;
+
   // Getters - Dashboard
   LoadState get dashboardState => _dashboardState;
   int get testsTaken => _testsTaken;
@@ -48,6 +65,13 @@ class StudentController extends ChangeNotifier {
   int get streak => _streak;
   double get completionPercentage => _completionPercentage;
   List<Map<String, dynamic>> get recentActivity => _recentActivity;
+
+  // Getters - Test history & reports list
+  List<TestModel> get testHistory => _testHistory;
+  List<ReportModel> get reportsList => _reportsList;
+  double get averageScore => _averageScore;
+  String get averageScoreBand => _averageScoreBand;
+  List<Map<String, dynamic>> get recommendedTests => _recommendedTests;
 
   // Getters - Test
   TestModel? get currentTest => _currentTest;
@@ -69,32 +93,230 @@ class StudentController extends ChangeNotifier {
   List<ReportModel> get reports => _reports;
   LoadState get reportState => _reportState;
 
+  void setCurrentReport(ReportModel report) {
+    _currentReport = report;
+    _reportState = LoadState.success;
+    notifyListeners();
+  }
+
   // Getters - Academic
   StudentAcademicModel? get academicData => _academicData;
   int get academicFormStep => _academicFormStep;
   LoadState get academicState => _academicState;
 
+  // Session invite methods
+  void addSessionInvite(Map<String, dynamic> invite) {
+    _sessionInvites.insert(0, invite);
+    notifyListeners();
+  }
+
+  void respondToSessionInvite(String id, bool accept) {
+    _sessionInvites = _sessionInvites.map((inv) {
+      if (inv['id'] == id) {
+        return {...inv, 'status': accept ? 'accepted' : 'declined'};
+      }
+      return inv;
+    }).toList();
+    notifyListeners();
+  }
+
   // Dashboard methods
-  Future<void> loadDashboard() async {
+  Future<void> loadDashboard({String? studentId, bool isNewSignup = false}) async {
     _dashboardState = LoadState.loading;
     notifyListeners();
 
     try {
-      // Mock data for demo
-      await Future.delayed(const Duration(milliseconds: 500));
-      _testsTaken = 3;
-      _reportsGenerated = 2;
-      _streak = 5;
-      _completionPercentage = 65;
-      _recentActivity = [
-        {'title': 'Career Test Completed', 'time': '2 hours ago', 'icon': 'test'},
-        {'title': 'AI Report Generated', 'time': '1 day ago', 'icon': 'report'},
-        {'title': 'Academic Details Updated', 'time': '3 days ago', 'icon': 'academic'},
-        {'title': 'New Counselor Remark', 'time': '5 days ago', 'icon': 'remark'},
-      ];
+      if (isNewSignup || _useMock && isNewSignup) {
+        _testsTaken = 0;
+        _reportsGenerated = 0;
+        _streak = 0;
+        _completionPercentage = 0;
+        _recentActivity = [];
+        _averageScore = 0;
+        _averageScoreBand = 'N/A';
+        _dashboardState = LoadState.success;
+        notifyListeners();
+        return;
+      }
+
+      if (_useMock) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        _testsTaken = 3;
+        _reportsGenerated = 2;
+        _streak = 5;
+        _completionPercentage = 65;
+        _recentActivity = [
+          {
+            'title': 'Career Test Completed',
+            'subtitle': 'Score: 78% - Good',
+            'time': '2 hours ago',
+            'icon': 'test',
+          },
+          {
+            'title': 'AI Report Generated',
+            'time': '1 day ago',
+            'icon': 'report',
+          },
+          {
+            'title': 'Academic Details Updated',
+            'subtitle': 'Class 10: 85% | Class 12: 78%',
+            'time': '3 days ago',
+            'icon': 'academic',
+          },
+          {
+            'title': 'Counsellor Remark',
+            'subtitle': 'Focus on logical reasoning and practice more aptitude tests.',
+            'counselorName': 'Dr. Priya Sharma',
+            'remarkType': 'academic',
+            'actionItems': ['Practice aptitude tests daily', 'Review logical reasoning basics'],
+            'time': '5 days ago',
+            'icon': 'remark',
+          },
+        ];
+        _averageScore = 74.0;
+        _averageScoreBand = 'Good';
+      } else {
+        // Live: aggregate from Firestore
+        final sid = studentId ?? '';
+        final history = await _testService.getTestHistory(sid);
+        final reports = await _reportService.getStudentReports(sid);
+
+        _testsTaken = history.length;
+        _reportsGenerated = reports.length;
+        _streak = _testsTaken > 0 ? _testsTaken : 0;
+        _completionPercentage = _testsTaken > 0 ? (_reportsGenerated / _testsTaken * 100).clamp(0, 100) : 0;
+
+        if (history.isNotEmpty) {
+          _averageScore = history
+              .where((t) => t.score != null)
+              .fold<double>(0, (sum, t) => sum + t.score!) /
+              history.where((t) => t.score != null).length.clamp(1, 999);
+        } else {
+          _averageScore = 0;
+        }
+        _averageScoreBand = _averageScore >= 85
+            ? 'Excellent'
+            : _averageScore >= 70
+                ? 'Good'
+                : _averageScore >= 50
+                    ? 'Average'
+                    : _averageScore > 0
+                        ? 'Below Average'
+                        : 'N/A';
+        _recentActivity = [];
+      }
+
       _dashboardState = LoadState.success;
     } catch (_) {
       _dashboardState = LoadState.error;
+    }
+    notifyListeners();
+  }
+
+  // Test history
+  Future<void> loadTestHistory({String? studentId, bool isNewSignup = false}) async {
+    if (isNewSignup) {
+      _testHistory = [];
+      _recommendedTests = _defaultRecommendedTests;
+      notifyListeners();
+      return;
+    }
+
+    if (_useMock) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      _testHistory = [
+        TestModel(
+          id: 'test_h1',
+          title: 'Career Aptitude Test',
+          description: 'Comprehensive career aptitude assessment',
+          questions: [],
+          durationMinutes: 45,
+          status: TestStatus.completed,
+          completedAt: DateTime.now().subtract(const Duration(hours: 2)),
+          score: 78,
+        ),
+        TestModel(
+          id: 'test_h2',
+          title: 'Personality Assessment',
+          description: 'Personality type and work style evaluation',
+          questions: [],
+          durationMinutes: 30,
+          status: TestStatus.completed,
+          completedAt: DateTime.now().subtract(const Duration(days: 5)),
+          score: 82,
+        ),
+        TestModel(
+          id: 'test_h3',
+          title: 'Interest Inventory',
+          description: 'Holland code interest profiler',
+          questions: [],
+          durationMinutes: 25,
+          status: TestStatus.completed,
+          completedAt: DateTime.now().subtract(const Duration(days: 12)),
+          score: 62,
+        ),
+      ];
+    } else {
+      _testHistory = await _testService.getTestHistory(studentId ?? '');
+    }
+
+    _recommendedTests = _defaultRecommendedTests;
+    notifyListeners();
+  }
+
+  // Reports list
+  Future<void> loadReportsList({String? studentId, bool isNewSignup = false}) async {
+    if (isNewSignup) {
+      _reportsList = [];
+      notifyListeners();
+      return;
+    }
+
+    if (_useMock) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      _reportsList = [
+        ReportModel(
+          id: 'rpt_1',
+          studentId: 'mock_student_1',
+          testId: 'test_h1',
+          overallScore: 78,
+          performanceBand: 'Good',
+          categoryScores: [
+            CategoryScore(category: 'Logical', score: 85, totalQuestions: 10, correctAnswers: 8),
+            CategoryScore(category: 'Verbal', score: 70, totalQuestions: 10, correctAnswers: 7),
+            CategoryScore(category: 'Spatial', score: 80, totalQuestions: 10, correctAnswers: 8),
+          ],
+          recommendations: [],
+          remarks: [
+            CounselorRemark(
+              id: 'rmk_1',
+              counselorId: 'c1',
+              counselorName: 'Dr. Priya Sharma',
+              studentId: 'mock_student_1',
+              message: 'Strong analytical skills. Focus on verbal reasoning for improvement.',
+              type: RemarkType.academic,
+              createdAt: DateTime.now().subtract(const Duration(days: 1)),
+            ),
+          ],
+          generatedAt: DateTime.now().subtract(const Duration(hours: 2)),
+        ),
+        ReportModel(
+          id: 'rpt_2',
+          studentId: 'mock_student_1',
+          testId: 'test_h2',
+          overallScore: 82,
+          performanceBand: 'Good',
+          categoryScores: [
+            CategoryScore(category: 'Openness', score: 90, totalQuestions: 8, correctAnswers: 7),
+            CategoryScore(category: 'Conscientiousness', score: 75, totalQuestions: 8, correctAnswers: 6),
+          ],
+          recommendations: [],
+          remarks: [],
+          generatedAt: DateTime.now().subtract(const Duration(days: 5)),
+        ),
+      ];
+    } else {
+      _reportsList = await _reportService.getStudentReports(studentId ?? '');
     }
     notifyListeners();
   }
@@ -105,8 +327,9 @@ class StudentController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Use mock test for demo
-      _currentTest = TestService.getMockTest();
+      _currentTest = _useMock
+          ? TestService.getMockTest()
+          : await _testService.generateTest();
       _currentQuestionIndex = 0;
       _answers = {};
       _isTestSubmitted = false;
@@ -177,19 +400,36 @@ class StudentController extends ChangeNotifier {
     }
   }
 
-  Future<void> submitTest() async {
+  Future<void> submitTest({String? studentId}) async {
     _timer?.cancel();
     _isTestSubmitted = true;
     _testState = LoadState.loading;
     notifyListeners();
 
     try {
-      // Calculate score locally for demo
+      // Calculate score locally
       _currentTest = _currentTest!.copyWith(
         status: TestStatus.completed,
         answers: _answers,
         completedAt: DateTime.now(),
       );
+
+      // Persist to Firestore when live
+      if (!_useMock && studentId != null) {
+        await _testService.submitTest(
+          testId: _currentTest!.id,
+          studentId: studentId,
+          answers: _answers,
+          score: testScore,
+          categoryScores: categoryScores.map((cs) => {
+            'category': cs.category,
+            'score': cs.score,
+            'totalQuestions': cs.totalQuestions,
+            'correctAnswers': cs.correctAnswers,
+          }).toList(),
+        );
+      }
+
       _testsTaken++;
       _testState = LoadState.success;
     } catch (_) {
@@ -221,7 +461,7 @@ class StudentController extends ChangeNotifier {
   }
 
   // Report methods
-  Future<void> loadReport() async {
+  Future<void> loadReport({String? studentId}) async {
     _reportState = LoadState.loading;
     notifyListeners();
 
@@ -238,7 +478,7 @@ class StudentController extends ChangeNotifier {
                   : 'Below Average';
 
       _currentReport = await gemini.generateFullReport(
-        studentId: _currentTest?.id ?? 'student_1',
+        studentId: studentId ?? _currentTest?.id ?? 'student_1',
         testId: _currentTest?.id ?? 'test_1',
         overallScore: score,
         performanceBand: band,
@@ -246,6 +486,12 @@ class StudentController extends ChangeNotifier {
         answers: _answers,
         academicData: _academicData,
       );
+
+      // Save report to Firestore when live
+      if (!_useMock && _currentReport != null) {
+        await _reportService.saveReport(_currentReport!);
+      }
+
       _reportState = LoadState.success;
     } catch (_) {
       _currentReport = ReportService.getMockReport();
@@ -265,18 +511,50 @@ class StudentController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> submitAcademicData() async {
+  Future<void> submitAcademicData({String? studentId}) async {
     _academicState = LoadState.loading;
     notifyListeners();
 
     try {
-      await Future.delayed(const Duration(milliseconds: 800));
+      if (_useMock) {
+        await Future.delayed(const Duration(milliseconds: 800));
+      } else if (studentId != null && _academicData != null) {
+        await _fs.setDocument(
+          _fs.academics(studentId),
+          'data',
+          _academicData!.toJson(),
+        );
+      }
       _academicState = LoadState.success;
     } catch (_) {
       _academicState = LoadState.error;
     }
     notifyListeners();
   }
+
+  static final List<Map<String, dynamic>> _defaultRecommendedTests = [
+    {
+      'title': 'Logical Reasoning Test',
+      'description': 'Assess your analytical and logical thinking abilities',
+      'duration': 30,
+      'questions': 25,
+      'difficulty': 'Medium',
+    },
+    {
+      'title': 'Verbal Ability Test',
+      'description': 'Evaluate your language comprehension and communication skills',
+      'duration': 20,
+      'questions': 20,
+      'difficulty': 'Easy',
+    },
+    {
+      'title': 'STEM Aptitude Test',
+      'description': 'Discover your potential in Science, Technology, Engineering & Math',
+      'duration': 40,
+      'questions': 30,
+      'difficulty': 'Hard',
+    },
+  ];
 
   @override
   void dispose() {
