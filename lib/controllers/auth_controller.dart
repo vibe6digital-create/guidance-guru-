@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -76,9 +77,7 @@ class AuthController extends ChangeNotifier {
       _state = AuthState.otpSent;
     } catch (e) {
       _state = AuthState.error;
-      _errorMessage = e.toString().contains('FirebaseAuthException')
-          ? e.toString().replaceFirst(RegExp(r'.*\] '), '')
-          : 'Failed to send OTP. Please try again.';
+      _errorMessage = _formatAuthError(e);
     }
     notifyListeners();
   }
@@ -180,11 +179,29 @@ class AuthController extends ChangeNotifier {
       _state = AuthState.otpSent;
     } catch (e) {
       _state = AuthState.error;
-      _errorMessage = e.toString().contains('FirebaseAuthException')
-          ? e.toString().replaceFirst(RegExp(r'.*\] '), '')
-          : e.toString();
+      _errorMessage = _formatAuthError(e);
     }
     notifyListeners();
+  }
+
+  String _formatAuthError(Object e) {
+    final msg = e.toString();
+    if (e is FirebaseAuthException) {
+      return e.message ?? 'Authentication failed. Please try again.';
+    }
+    if (msg.contains('FirebaseAuthException')) {
+      return msg.replaceFirst(RegExp(r'.*\] '), '');
+    }
+    if (msg.contains('too-many-requests')) {
+      return 'Too many attempts. Please try again later.';
+    }
+    if (msg.contains('invalid-phone-number')) {
+      return 'Invalid phone number. Please check and try again.';
+    }
+    if (msg.contains('network-request-failed')) {
+      return 'Network error. Please check your connection.';
+    }
+    return 'Something went wrong. Please try again.';
   }
 
   void updateUser(UserModel updatedUser) {

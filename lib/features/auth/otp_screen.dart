@@ -97,7 +97,13 @@ class _OtpScreenState extends State<OtpScreen>
         );
         if (!mounted) return;
         if (registered) {
-          _navigateToDashboard(role);
+          // New accounts (student/parent) pick a counsellor first
+          if (role == UserRole.student || role == UserRole.parent) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/select-counselor-signup', (_) => false);
+          } else {
+            _navigateToDashboard(role);
+          }
         }
       } else if (role != null) {
         // Login flow — new user without signup data, go to role selection

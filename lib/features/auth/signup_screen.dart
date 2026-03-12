@@ -379,14 +379,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               child: TextButton(
                                 onPressed: () {
                                   auth.setMockUser(role, isNewSignup: true);
-                                  final route = switch (role) {
-                                    UserRole.student => '/student-dashboard',
-                                    UserRole.parent => '/parent-dashboard',
-                                    UserRole.counselor =>
-                                      '/counselor-dashboard',
-                                  };
-                                  Navigator.pushNamedAndRemoveUntil(
-                                      context, route, (_) => false);
+                                  if (role == UserRole.student ||
+                                      role == UserRole.parent) {
+                                    Navigator.pushNamedAndRemoveUntil(
+                                        context,
+                                        '/select-counselor-signup',
+                                        (_) => false);
+                                  } else {
+                                    Navigator.pushNamedAndRemoveUntil(
+                                        context,
+                                        '/counselor-dashboard',
+                                        (_) => false);
+                                  }
                                 },
                                 child: Text(
                                   'Skip Sign Up (Demo)',

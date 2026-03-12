@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/user_model.dart';
 import 'firestore_service.dart';
@@ -28,9 +29,10 @@ class AuthService {
       return {'isNewUser': false};
     }
 
-    // Disable app verification (reCAPTCHA/APNs) for testing on iOS simulator.
-    // Remove this for production with real APNs setup.
-    await _firebaseAuth.setSettings(appVerificationDisabledForTesting: true);
+    // Only disable app verification in debug mode for emulator/simulator testing
+    if (kDebugMode) {
+      await _firebaseAuth.setSettings(appVerificationDisabledForTesting: true);
+    }
 
     final completer = Completer<void>();
 
@@ -80,6 +82,10 @@ class AuthService {
     if (_useMock) {
       await Future.delayed(const Duration(milliseconds: 500));
       return {'user': null}; // triggers new-user path in controller
+    }
+
+    if (_verificationId == null) {
+      throw Exception('No verification ID. Please request OTP again.');
     }
 
     final credential = PhoneAuthProvider.credential(

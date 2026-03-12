@@ -328,6 +328,11 @@ class ParentController extends ChangeNotifier {
           isAvailable: profile['isAvailable'] ?? true,
         ));
       }
+
+      // Fallback to mock counselors if Firestore has none
+      if (_availableCounselors.isEmpty) {
+        _availableCounselors = _mockCounselors;
+      }
     }
 
     _filteredCounselors = List.from(_availableCounselors);

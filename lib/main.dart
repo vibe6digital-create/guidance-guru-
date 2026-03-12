@@ -19,6 +19,7 @@ import 'features/auth/otp_screen.dart';
 import 'features/auth/role_selection_screen.dart';
 import 'features/auth/signup_screen.dart';
 import 'features/auth/welcome_screen.dart';
+import 'features/auth/select_counselor_signup_screen.dart';
 import 'features/student/student_dashboard.dart';
 import 'features/student/academic_form.dart';
 import 'features/student/test_screen.dart';
@@ -120,6 +121,9 @@ class GuidanceGuruApp extends StatelessWidget {
       case '/role-selection':
         page = const RoleSelectionScreen();
         break;
+      case '/select-counselor-signup':
+        page = const SelectCounselorSignupScreen();
+        break;
       // Student
       case '/student-dashboard':
         page = const StudentDashboard();
@@ -200,7 +204,7 @@ class GuidanceGuruApp extends StatelessWidget {
     return _buildRoute(settings, page);
   }
 
-  static const _authRoutes = {'/welcome', '/login', '/signup', '/otp', '/role-selection'};
+  static const _authRoutes = {'/welcome', '/login', '/signup', '/otp', '/role-selection', '/select-counselor-signup'};
   static const _dashboardRoutes = {
     '/student-dashboard',
     '/parent-dashboard',
